@@ -191,7 +191,7 @@ const PREV={'CUST-002':[['v1','01 Jan 2024','Initial version'],['v2','01 Dec 202
 const VT={'CUST-004':'Threshold change','SUP-001':'Methodology change','EMP-003':'Reference list update','MAT-002':'Methodology change','COOP-004':'Calculation change'};
 for(const r of RU){r.hist=PREV[r.id]||(r.start>0?[['v1','01 '+M[r.start]+' 2026','Initial version']]:[['v1','01 '+['Jan','Apr','Sep','Nov'][r.id.length%4]+' 2024','Initial version']]);r.v0=r.hist.length;r.vm.forEach((v,i)=>r.hist.push(['v'+(r.v0+i+1),'01 '+M[v]+' 2026',VT[r.id]||'Methodology change',v]))}
 const RID=Object.fromEntries(RU.map(r=>[r.id,r]));
-const DIMS=['Completeness','Validity','Uniqueness','Consistency','Accuracy'];
+const DIMS=['Completeness','Validity','Uniqueness'];for(const r of RU)if(!DIMS.includes(r.dim))r.dim='Validity';
 const OFF={France:0,Belgium:-.6,Italy:-1.1,Germany:.4,Spain:-.8,Romania:-1.6,'Czech Republic':-.3,Brazil:0};
 const CC={France:'FR',Belgium:'BE',Italy:'IT',Germany:'DE',Spain:'ES',Romania:'RO','Czech Republic':'CZ',Brazil:'BR'};
 const SYS={France:'SAP',Belgium:'Salesforce',Italy:'SAP',Germany:'SAP',Spain:'Oracle',Romania:'SAP','Czech Republic':'SAP',Brazil:'SAP S/4'};
@@ -237,6 +237,8 @@ const st=(v,t)=>v==null?'neu':v>=t?'good':v>t-3?'att':'bad';
 const range=()=>S.f.period.split('-').map(Number);
 const okDom=p=>S.f.dom==='All'||p.e.dom===S.f.dom;
 function sel(o={}){const f={...S.f,...o};return PAIRS.filter(p=>(f.dom==='All'||p.e.dom===f.dom)&&(f.ent==='All'||p.e.id===f.ent)&&(f.param==='All'||p.r.param===f.param)&&(f.rule==='All'||p.r.id===f.rule)&&(f.scope==='All in scope'||p.c===f.scope)&&(f.dim==='All'||p.r.dim===f.dim)&&(f.owner==='All'||p.e.owner===f.owner))}
+function aggAcc(ps){let a=0,b=0,t=0;for(let m=0;m<=LAST;m++)for(const p of ps)if(act(p,m)){a+=p.s[m]*p.v[m];b+=p.v[m];t+=p.r.target*p.v[m]}return b?{s:a/b,ev:b,t:t/b,fail:b-a/100}:{s:null,ev:0,t:null,fail:0}}
+const ACCL='Accumulated · Jan – Nov';const AGG=(ps,m)=>agg(ps,m);
 function agg(ps,m){let a=0,b=0,t=0;for(const p of ps)if(act(p,m)){a+=p.s[m]*p.v[m];b+=p.v[m];t+=p.r.target*p.v[m]}return b?{s:a/b,ev:b,t:t/b,fail:b-a/100}:{s:null,ev:0,t:null,fail:0}}
 const refPairs=(ps,s)=>ps.filter(p=>act(p,s));
 const uniq=a=>[...new Set(a)];
@@ -254,14 +256,14 @@ function opts(key){const f=S.f;
  if(key==='rule')return['All',...RU.filter(r=>(f.dom==='All'||EN[r.ent].dom===f.dom)&&(f.ent==='All'||r.ent===f.ent)&&(f.param==='All'||r.param===f.param)).map(r=>r.id)];
  if(key==='scope')return['All in scope',...COUNTRIES];
  if(key==='period')return PERIODS.map(p=>p[0]);
- if(key==='month')return M.map((m,i)=>String(i)).reverse();
+ if(key==='month')return(S.page==='matrix'?['acc']:[]).concat(M.map((m,i)=>String(i)).reverse());
  if(key==='owner')return['All',...uniq(ENT.map(e=>e.owner))];
  if(key==='dim')return['All',...DIMS];if(key==='rview')return['Definition','Version history'];
  if(key==='agg')return['Monthly','Quarterly'];
  if(key==='status')return['All open issues','New','Persistent','Reopened'];
  if(key==='countBy')return['Data domain','Data entity','Critical parameter','Quality rule','Quality dimension'];
  if(key==='view')return['history','coverage'];return[]}
-function lab(key,v){if(key==='period'){const [a,b]=v.split('-').map(Number);return a===0&&b===LAST?'Accumulated · '+M[0]+' – '+M[LAST]:a===b?MY(a):M[a]+' – '+M[b]+' 2026'}if(key==='month')return MY(+v);if(key==='rule')return v==='All'?'All':RID[v].id+' · '+RID[v].name;if(key==='view')return v==='history'?'Scope & version history':'Coverage summary';return v}
+function lab(key,v){if(key==='period'){const [a,b]=v.split('-').map(Number);return a===0&&b===LAST?'Accumulated · '+M[0]+' – '+M[LAST]:a===b?MY(a):M[a]+' – '+M[b]+' 2026'}if(key==='month')return v==='acc'?ACCL:MY(+v);if(key==='rule')return v==='All'?'All':RID[v].id+' · '+RID[v].name;if(key==='view')return v==='history'?'Scope & version history':'Coverage summary';return v}
 function perList(v){const [a,b]=v.split('-').map(Number);const col=(t,attr,cur,dis)=>'<div><div class="ph">'+t+'</div><div class="mg">'+M.map((m,i)=>'<button class="'+(i===cur?'sel':i>=a&&i<=b?'in':'')+'" data-'+attr+'="'+i+'"'+(dis(i)?' disabled':'')+'>'+ML(i)+'</button>').join('')+'</div></div>';return '<div class="list per"><button class="ytd'+(a===0&&b===LAST?' on':'')+'" data-ytd="1">Accumulated · Jan → today ('+M[0]+' – '+M[LAST]+' 2026)</button>'+col('From','ps',a,()=>false)+col('To','pe',b,i=>i<a)+'<div class="pf">'+lab('period',v)+' · last snapshot of each month</div></div>'}
 const MD=[31,28,31,30,31,30,31,31,30,31,23];const fD=(d,m)=>String(d).padStart(2,'0')+'/'+String(m+1).padStart(2,'0')+'/2026';
 const CAL='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="2" width="10" height="9" rx="1" fill="none" stroke="#8A8886"/><path d="M1 4.5h10M4 1v2M8 1v2" stroke="#8A8886"/></svg>';
@@ -351,7 +353,7 @@ function covTable(s,e){const rows=ENT.filter(x=>(S.f.dom==='All'||x.dom===S.f.do
  return '<div class="tbl"><table><tr><th>Data domain</th><th>Data entity</th><th>Critical parameters</th><th>Quality rules</th><th>Countries</th><th class="num">Reported DQS</th><th class="num">Reference DQS</th><th class="num">Scope effect (pp)</th></tr>'+rows.map(([x,a,b,c,r,f])=>'<tr class="row" '+drill({ent:x.id,dom:x.dom})+'><td>'+esc(x.dom)+'</td><td>'+esc(x.id)+'</td><td>'+a+'</td><td>'+b+'</td><td>'+c+'</td><td class="num"><b>'+pc(r)+'</b></td><td class="num">'+pc(f)+'</td><td class="num '+(r-f<-.05?'dn':'')+'">'+(f==null?'— (new in period)':sg(r-f))+'</td></tr>').join('')+'</table></div>'}
 
 /* ---------------- page: quality matrix ---------------- */
-function pMatrix(){const m=S.f.month,pm=m-1;const base=sel({dim:'All'});const dims=DIMS.filter(d=>S.f.dim==='All'||d===S.f.dim);
+function pMatrix(){const ACC=S.f.month==='acc',m=ACC?LAST:S.f.month,pm=ACC?-1:m-1;const agg=(ps,mm)=>ACC&&mm===m?aggAcc(ps):AGG(ps,mm);const MYm=ACC?'Accumulated Jan – Nov 2026':MY(m);const base=sel({dim:'All'});const dims=DIMS.filter(d=>S.f.dim==='All'||d===S.f.dim);
  const rowsData=[];const node=(level,key,ps,dom)=>{const a=agg(ps,m);const pr=agg(ps.filter(p=>act(p,pm)),pm);const startedNow=pm>=0&&!ps.some(p=>act(p,pm));return {level,key,ps,dom,a,d:startedNow||pr.s==null?null:a.s-pr.s,dims:dims.map(d=>agg(ps.filter(p=>p.r.dim===d),m))}};
  for(const dname of Object.keys(DOM)){const dp=base.filter(p=>p.e.dom===dname&&act(p,m));if(!dp.length)continue;rowsData.push(node(0,dname,dp,dname));if(!S.exp.has(dname))continue;
   for(const en of ENT.filter(x=>x.dom===dname)){const ep=dp.filter(p=>p.e.id===en.id);if(!ep.length)continue;rowsData.push(node(1,en.id,ep,dname));if(!S.exp.has(en.id))continue;
@@ -364,15 +366,15 @@ function pMatrix(){const m=S.f.month,pm=m-1;const base=sel({dim:'All'});const di
  let h=header('Data quality performance by entity &amp; critical parameter','Find quality gaps across data domains, data entities, critical parameters and quality dimensions.');
  h+=fbar([['month','Period'],['dom','Data domain'],['ent','Data entity'],['param','Critical parameter'],['scope','Operational scope']]);
  const r0=(a,b)=>'<span class="'+(a?'dn':'up')+'">'+(b?Math.round(a/b*100):0)+'%</span>';
- h+=kpis([['Data entities below target',entBelow+' / '+entIds.length,r0(entBelow,entIds.length)+'&nbsp; of data entities'],['Critical parameters below target',parBelow+' / '+parKeys.length,r0(parBelow,parKeys.length)+'&nbsp; of parameters'],['Quality results below target',cellsB+' / '+cells,r0(cellsB,cells)+'&nbsp; parameter × dimension'],['Quality rules monitored',rules,'<b>'+MY(m)+'</b>&nbsp; last snapshot']]);
+ h+=kpis([['Data entities below target',entBelow+' / '+entIds.length,r0(entBelow,entIds.length)+'&nbsp; of data entities'],['Critical parameters below target',parBelow+' / '+parKeys.length,r0(parBelow,parKeys.length)+'&nbsp; of parameters'],['Quality results below target',cellsB+' / '+cells,r0(cellsB,cells)+'&nbsp; parameter × dimension'],['Quality rules monitored',rules,(ACC?'<b>Jan – Nov 2026</b>&nbsp; accumulated':'<b>'+MYm+'</b>&nbsp; last snapshot')]]);
  const cw=[230,72,76,80,100,120];const dw=(1200-cw.reduce((a,b)=>a+b,0))/dims.length;
  let t='<div class="tbl mx" style="top:54px"><table><colgroup>'+cw.map(w=>'<col style="width:'+w+'px">').join('')+dims.map(()=>'<col style="width:'+dw+'px">').join('')+'</colgroup><tr><th>Data domain / Data entity / Critical parameter</th><th class="num">DGS (%)</th><th class="num">DQS (%)</th><th class="num">Target (%)</th><th class="num">Gap to target (pp)</th><th class="num">Δ vs previous month (pp)</th>'+dims.map(d=>'<th class="num">'+d+'</th>').join('')+'</tr>';
  for(const r of rowsData){const pad=[8,26,44][r.level];const tw=r.level<2?'<span class="tw" data-act="tw" data-k="'+esc(r.key)+'">'+(S.exp.has(r.key)?'▾':'▸')+'</span>':'';const ent=r.level===1?r.key:r.level===2?r.ps[0].e.id:null;
   const gap=r.a.s-r.a.t;
-  t+='<tr class="l'+r.level+'" '+drill({dom:r.dom,ent:ent||'All',param:r.level===2?r.key:'All'})+'><td class="nm" style="padding-left:'+pad+'px">'+tw+esc(r.key)+'</td><td class="num">'+(r.level===0?'<b>'+pc(DOM[r.key][m])+'</b>':'<span style="color:#9AA3AE">—</span>')+'</td><td class="num" style="color:#16376C;font-weight:700">'+pc(r.a.s)+'</td><td class="num">'+pc(r.a.t)+'</td><td class="num '+(gap<0?'dn':'up')+'" style="font-weight:400">'+sg(gap)+'</td><td class="num" style="color:'+(r.d==null?'#9AA3AE':r.d<0?'#D64554':'#1AAB40')+'">'+(r.d==null?'—':sg(r.d))+'</td>'+
+  t+='<tr class="l'+r.level+'" '+drill({dom:r.dom,ent:ent||'All',param:r.level===2?r.key:'All'})+'><td class="nm" style="padding-left:'+pad+'px">'+tw+esc(r.key)+'</td><td class="num">'+(r.level===0?'<b>'+pc((ACC?DOM[r.key].reduce((x,y)=>x+y)/DOM[r.key].length:DOM[r.key][m]))+'</b>':'<span style="color:#9AA3AE">—</span>')+'</td><td class="num" style="color:#16376C;font-weight:700">'+pc(r.a.s)+'</td><td class="num">'+pc(r.a.t)+'</td><td class="num '+(gap<0?'dn':'up')+'" style="font-weight:400">'+sg(gap)+'</td><td class="num" style="color:'+(r.d==null?'#9AA3AE':r.d<0?'#D64554':'#1AAB40')+'">'+(r.d==null?'—':sg(r.d))+'</td>'+
    r.dims.map((a,i)=>{if(a.s==null)return '<td class="num" style="color:#9AA3AE">N/A</td>';const on=S.cell&&S.cell.key===r.key&&S.cell.dim===dims[i]?' on':'';return '<td class="num dim'+on+'" data-act="cell" data-k="'+esc(r.key)+'" data-l="'+r.level+'" data-d="'+dims[i]+'" '+tip('<div class="h">'+esc(r.key)+' › '+dims[i]+'</div><table><tr><td>Score</td><td class="num"><b>'+pc(a.s)+'</b></td></tr><tr><td>Target</td><td class="num">'+pc(a.t)+'</td></tr><tr><td>Gap</td><td class="num">'+sg(a.s-a.t)+' pp</td></tr><tr><td>Evaluated</td><td class="num">'+k0(a.ev)+'</td></tr></table><div class="m">Click to see the detail · right-click › Drill through</div>')+'><span class="dot '+st(a.s,a.t)+'"></span>'+pc(a.s)+'</td>'}).join('')+'</tr>'}
  t+='</table></div>';
- h+='<div class="card" style="left:24px;top:246px;width:1232px;height:294px"><div class="vt">Quality performance matrix</div><div class="vs">DQS by data domain › data entity › critical parameter · '+MY(m)+' · status dot = score vs target · DGS at data domain level only</div>'+t+'</div>';
+ h+='<div class="card" style="left:24px;top:246px;width:1232px;height:294px"><div class="vt">Quality performance matrix</div><div class="vs">DQS by data domain › data entity › critical parameter · '+MYm+' · status dot = score vs target · DGS at data domain level only</div>'+t+'</div>';
  // selected panel
  h+='<div class="card" style="left:24px;top:552px;width:1232px;height:140px">';
  const c=S.cell&&rowsData.find(r=>r.key===S.cell.key&&String(r.level)===String(S.cell.l));
@@ -380,7 +382,7 @@ function pMatrix(){const m=S.f.month,pm=m-1;const base=sel({dim:'All'});const di
  else{const ps=c.ps.filter(p=>p.r.dim===S.cell.dim);const a=agg(ps,m),pr=agg(ps.filter(p=>act(p,pm)),pm);const rl=uniq(ps.filter(p=>act(p,m)).map(p=>p.r));const vch=rl.filter(r=>r.vm.includes(m)).length,scopeCh=(m===BR)||rl.some(r=>r.start===m);
   const cmp=vch?['att','Criteria changed']:scopeCh?['att','Scope changed']:['good','Comparable'];const ent=c.level===0?'All entities':c.level===1?c.key:c.ps[0].e.id;
   h+='<div class="vt">Selected: '+esc(c.key)+' › '+S.cell.dim+'</div><div class="vs">Click another cell to update this panel · right-click › Drill through › Rule performance</div>';
-  const co=[['Score',pc(a.s),MY(m)+' snapshot'],['Target',pc(a.t),S.cell.dim+' · '+esc(ent)],['Gap to target','<span class="'+(a.s<a.t?'dn':'up')+'" style="font-size:28px">'+sg(a.s-a.t)+' pp</span>','<span class="'+(a.s<a.t?'dn':'up')+'" style="font-weight:400">'+(a.s<a.t?'below target':'at or above target')+'</span>'],['Contributing rules',rl.length,rl.map(r=>r.id).join(' · ')]];
+  const co=[['Score',pc(a.s),ACC?'accumulated (Jan – Nov 2026)':MYm+' snapshot'],['Target',pc(a.t),S.cell.dim+' · '+esc(ent)],['Gap to target','<span class="'+(a.s<a.t?'dn':'up')+'" style="font-size:28px">'+sg(a.s-a.t)+' pp</span>','<span class="'+(a.s<a.t?'dn':'up')+'" style="font-weight:400">'+(a.s<a.t?'below target':'at or above target')+'</span>'],['Contributing rules',rl.length,rl.map(r=>r.id).join(' · ')]];
   h+=co.map((x,i)=>'<div class="co" style="left:'+(i*300)+'px;width:'+(i?300:316)+'px;padding-left:'+(i?20:16)+'px"><div class="l">'+x[0]+'</div><div class="v">'+x[1]+'</div><div class="r" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x[2]+'</div></div>').join('')}
  h+='</div><div class="foot">Scores consolidated by evaluated records · domain rows = aggregate of their entities · ▸ expands rows · right-click a row or cell › Drill through › Rule performance · * Nov = month to date</div><div class="foot r">Simulated data · prototype</div>';
  return h}
@@ -453,6 +455,8 @@ function histCard(x,m){const snaps=[];for(let i=x.first;i<=m;i++){let s='Persist
 
 /* ---------------- i18n (PT) ---------------- */
 const PTD=[
+['Accumulated Jan – Nov 2026','Acumulado jan – nov 2026'],['Jan – Nov 2026','jan – nov 2026'],['accumulated','acumulado'],
+['Accumulated · Jan – Nov','Acumulado · jan – nov'],['accumulated (Jan – Nov 2026)','acumulado (jan – nov 2026)'],
 ['Accumulated','Acumulado'],['Jan 1 → today (last update)','1º de jan → hoje (última atualização)'],['Use dd/mm/2026 between 01/01/2026 and 23/11/2026','Use dd/mm/2026 entre 01/01/2026 e 23/11/2026'],
 ['Data domains monitored over time','Domínios de dados monitorados ao longo do tempo'],['Data entities monitored over time','Entidades de dados monitoradas ao longo do tempo'],['Critical parameters monitored over time','Parâmetros críticos monitorados ao longo do tempo'],['Quality rules monitored over time','Regras de qualidade monitoradas ao longo do tempo'],['Quality dimensions monitored over time','Dimensões de qualidade monitoradas ao longo do tempo'],
 ['Purchasing','Compras'],['Agricultural','Agrícola'],['Supply Chain','Supply Chain'],['Material','Material'],['Purchase contract','Contrato de compra'],['Cooperative member','Cooperado'],['Plot','Talhão'],['Cost center','Centro de custo'],['Profit center','Centro de lucro'],['Organizational structure','Estrutura organizacional'],['Plant','Planta'],['Transport route','Rota de transporte'],
@@ -520,18 +524,18 @@ const PTM={Jan:'Jan',Feb:'Fev',Mar:'Mar',Apr:'Abr',May:'Mai',Jun:'Jun',Jul:'Jul'
 const PEX=new Map(PTD);const PHR=PTD.slice().sort((a,b)=>b[0].length-a[0].length).map(([a,b])=>[new RegExp('(^|[^A-Za-zÀ-ÿ])'+a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![A-Za-zÀ-ÿ])','g'),b]);
 function trs(v){const t=v.trim();if(!t||!/[A-Za-z0-9]/.test(t))return v;let r;if(PEX.has(t))r=PEX.get(t);else{r=t;for(const [re,b] of PHR)if(re.test(r)){re.lastIndex=0;r=r.replace(re,(m,p1)=>p1+b)}}
  r=r.replace(/(\d{1,2} )?\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g,(m,d,mo)=>(d||'')+(d?PTM[mo].toLowerCase():PTM[mo]));
- r=r.replace(/(\d),(\d{3})(?!\d)/g,'$1§$2').replace(/(\d)\.(\d)/g,'$1,$2').replace(/§/g,'.');return v.replace(t,r)}
+ r=r.replace(/(\d),(?=\d{3}(?!\d))/g,'$1§').replace(/(\d)\.(\d)/g,'$1,$2').replace(/§/g,'.');return v.replace(t,r)}
 function trNode(root){if(S.lang!=='pt')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)?2:1});const ns=[];while(w.nextNode())ns.push(w.currentNode);for(const n of ns){const o=n.nodeValue,r=trs(o);if(r!==o)n.nodeValue=r}}
 
 /* ---------------- render + events ---------------- */
 const cv=document.getElementById('canvas'),wrap=document.getElementById('wrap'),tipEl=document.getElementById('tip'),ctx=document.getElementById('ctx');
-function render(){TIPS=[];if(S.page==='records'&&S.f.rule==='All'&&!S._rd){S.f.rule='CUST-002';S.f.ent='Customer';S.f.dom='Sales & Marketing';S._rd=1}
+function render(){TIPS=[];if(S.page!=='matrix'&&S.f.month==='acc')S.f.month=LAST;if(S.page==='records'&&S.f.rule==='All'&&!S._rd){S.f.rule='CUST-002';S.f.ent='Customer';S.f.dom='Sales & Marketing';S._rd=1}
  const pages={overview:pOverview,matrix:pMatrix,rules:pRules,records:pRecords};let html='';try{html=pages[S.page]()}catch(err){html='<div style="padding:40px;color:#D64554">'+esc(err.message)+'</div>';console.error(err)}cv.innerHTML=html;
  document.getElementById('pages').innerHTML='<h4>Pages</h4>'+PAGES.map(([k,l])=>'<button class="pg'+(S.page===k?' on':'')+'" data-page="'+k+'">'+l+'</button>').join('');
  const cur=PAGES.find(p=>p[0]===S.page)[1];document.getElementById('bar').innerHTML=(S.back.length?'<button class="back" data-act="back">← Back</button>':'')+'<span>Data+</span>›<b>'+cur+'</b><span style="margin-left:auto">Hover for tooltips · click to select · right-click a row or cell to drill through</span>';document.documentElement.lang=S.lang==='pt'?'pt-BR':'en';document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.dataset.lang===S.lang));document.querySelector('.top span:nth-of-type(2)').textContent='Data+ · Data quality report';document.querySelector('.top .tag').textContent='Prototype · simulated data · Jan – 23 Nov 2026';trNode(document.body);fit()}
 function fit(){const k=Math.min((wrap.clientWidth-24)/1280,(wrap.clientHeight-24)/720);cv.style.transform='translate('+Math.max(12,(wrap.clientWidth-1280*k)/2)+'px,'+Math.max(12,(wrap.clientHeight-720*k)/2)+'px) scale('+k+')'}
 const ro=new ResizeObserver(fit);ro.observe(wrap);
-function setF(key,v){const f=S.f;f[key]=key==='month'?+v:v;
+function setF(key,v){const f=S.f;f[key]=key==='month'?(v==='acc'?'acc':+v):v;
  if(key==='dom'){if(f.ent!=='All'&&EN[f.ent].dom!==v&&v!=='All')f.ent='All';}
  if(key==='dom'||key==='ent'){if(!opts('param').includes(f.param))f.param='All';}
  if(['dom','ent','param'].includes(key)){if(!opts('rule').includes(f.rule))f.rule='All';}
@@ -569,7 +573,7 @@ cv.addEventListener('contextmenu',e=>{const t=e.target.closest('[data-drill]');i
  ctx.onclick=ev=>{const b=ev.target.closest('[data-go]');if(!b)return;S.back.push({page:S.page,f:{...S.f},cell:S.cell,selRule:S.selRule});
   if(S.page==='matrix'&&S.cell)o.dim=S.cell.dim;
   for(const k of ['dom','ent','param','rule'])if(o[k]&&o[k]!=='All')S.f[k]=o[k];if(o.dim)S.f.dim=o.dim;
-  if(b.dataset.go==='rules'){const [,e2]=range();S.selRule=o.rule||null;if(S.page==='matrix')S.f.period='0-'+S.f.month}
+  if(b.dataset.go==='rules'){const [,e2]=range();S.selRule=o.rule||null;if(S.page==='matrix')S.f.period='0-'+(S.f.month==='acc'?LAST:S.f.month)}
   if(b.dataset.go==='records'){S._rd=1;S.f.month=range()[1]}
   if(b.dataset.go==='matrix'){S.f.month=range()[1]}
   S.page=b.dataset.go;S.cell=null;ctx.style.display='none';render()}});
