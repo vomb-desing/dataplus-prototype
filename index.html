@@ -49,9 +49,13 @@ main{flex:1;display:flex;flex-direction:column}
 .list button:hover{background:var(--tint)}.list button.sel{font-weight:700;color:var(--navy);background:#F4F7FC}
 .list.per{width:330px;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;max-height:none}.list.per .ytd{grid-column:1/-1;text-align:left;border:1px solid var(--navy);border-radius:4px;padding:8px 10px;font-weight:700;color:var(--navy)}.list.per .ytd.on{background:var(--navy);color:#fff}.per .ph{font-weight:700;font-size:11px;color:var(--t2);margin-bottom:6px}.per .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.list.per .mg button{text-align:center;border:1px solid var(--grid);border-radius:4px;padding:6px 0}.list.per .mg button.in{background:var(--tint)}.list.per .mg button.sel{background:var(--navy);color:#fff;font-weight:700}.list.per .mg button:disabled{opacity:.35;cursor:default}.per .pf{grid-column:1/-1;font-size:11px;color:var(--t2);border-top:1px solid var(--grid);padding-top:8px}
 .dd.nl .list{top:36px}
-.dd.bs label{line-height:12px;margin-bottom:2px}.bsr{display:flex;gap:8px}
-.db{flex:1;height:24px;border:1px solid var(--ctl);background:#F3F3F3;border-radius:2px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px;cursor:pointer;color:#252423;font-family:inherit}
-.db:hover{border-color:#8A8886}.dd.bs.on .db{border-color:var(--blue)}.db svg{flex:none}
+.bsh{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;line-height:12px;margin-bottom:2px;white-space:nowrap}
+.acc{border:0;background:none;padding:0;font-size:10px;font-weight:700;color:var(--blue);cursor:pointer;font-family:inherit}.acc.on{color:var(--t2);font-weight:400}.acc.on::before{content:'✓ '}
+.bsr{display:flex;gap:6px}
+.db{flex:1;min-width:0;height:24px;border:1px solid var(--ctl);background:#fff;border-radius:2px;display:flex;align-items:center;gap:4px;padding:0 6px 0 0;cursor:text}
+.db:hover{border-color:#8A8886}.db:focus-within{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}.db svg{flex:none}
+.db input{flex:1;width:0;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:12px;color:#252423;padding:0 0 0 8px;height:100%}
+.db input.err{color:#D64554}.db:has(input.err){border-color:#D64554}
 .bsl{position:relative;height:12px;margin:2px 7px 0;cursor:pointer;touch-action:none}
 .bst{position:absolute;left:0;right:0;top:5px;height:2px;background:#C8C6C4}.bsf{position:absolute;top:5px;height:2px;background:#605E5C}
 .bsl i{position:absolute;top:-1px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;border:2px solid #605E5C;box-sizing:border-box;cursor:ew-resize}
@@ -255,14 +259,22 @@ function opts(key){const f=S.f;
  if(key==='dim')return['All',...DIMS];if(key==='rview')return['Definition','Version history'];
  if(key==='agg')return['Monthly','Quarterly'];
  if(key==='status')return['All open issues','New','Persistent','Reopened'];
- if(key==='countBy')return['Data domain','Data entity','Critical parameter','Quality rule','Quality dimension','Country'];
+ if(key==='countBy')return['Data domain','Data entity','Critical parameter','Quality rule','Quality dimension'];
  if(key==='view')return['history','coverage'];return[]}
 function lab(key,v){if(key==='period'){const [a,b]=v.split('-').map(Number);return a===0&&b===LAST?'Accumulated · '+M[0]+' – '+M[LAST]:a===b?MY(a):M[a]+' – '+M[b]+' 2026'}if(key==='month')return MY(+v);if(key==='rule')return v==='All'?'All':RID[v].id+' · '+RID[v].name;if(key==='view')return v==='history'?'Scope & version history':'Coverage summary';return v}
 function perList(v){const [a,b]=v.split('-').map(Number);const col=(t,attr,cur,dis)=>'<div><div class="ph">'+t+'</div><div class="mg">'+M.map((m,i)=>'<button class="'+(i===cur?'sel':i>=a&&i<=b?'in':'')+'" data-'+attr+'="'+i+'"'+(dis(i)?' disabled':'')+'>'+ML(i)+'</button>').join('')+'</div></div>';return '<div class="list per"><button class="ytd'+(a===0&&b===LAST?' on':'')+'" data-ytd="1">Accumulated · Jan → today ('+M[0]+' – '+M[LAST]+' 2026)</button>'+col('From','ps',a,()=>false)+col('To','pe',b,i=>i<a)+'<div class="pf">'+lab('period',v)+' · last snapshot of each month</div></div>'}
 const MD=[31,28,31,30,31,30,31,31,30,31,23];const fD=(d,m)=>String(d).padStart(2,'0')+'/'+String(m+1).padStart(2,'0')+'/2026';
 const CAL='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="2" width="10" height="9" rx="1" fill="none" stroke="#8A8886"/><path d="M1 4.5h10M4 1v2M8 1v2" stroke="#8A8886"/></svg>';
-function perSlicer(l){const v=S.f.period;const [a,b]=range();const o=S.open==='period';const P=i=>(i/LAST*100).toFixed(2)+'%';
- return '<div class="dd bs'+(o?' on':'')+'" style="width:386px"><label>'+l+'</label><div class="bsr"><button class="db" data-dd="period" aria-label="Start date"><span data-bs="a">'+fD(1,a)+'</span>'+CAL+'</button><button class="db" data-dd="period" aria-label="End date"><span data-bs="b">'+fD(MD[b],b)+'</span>'+CAL+'</button></div><div class="bsl" data-bsl><div class="bst"></div><div class="bsf" style="left:'+P(a)+';width:calc('+P(b)+' - '+P(a)+')"></div><i data-h="a" style="left:'+P(a)+'" '+tip(fD(1,a))+'></i><i data-h="b" style="left:'+P(b)+'" '+tip(fD(MD[b],b))+'></i></div>'+(o?perList(v):'')+'</div>'}
+function perSlicer(l){const [a,b]=range();const P=i=>(i/LAST*100).toFixed(2)+'%';const acc=a===0&&b===LAST;
+ const inp=(k,v,lbl)=>'<span class="db" onclick="this.firstChild.focus()"><input data-di="'+k+'" value="'+v+'" maxlength="10" placeholder="dd/mm/aaaa" inputmode="numeric" aria-label="'+lbl+'">'+CAL+'</span>';
+ return '<div class="dd bs" style="width:300px"><div class="bsh"><span>'+l+'</span><button class="acc'+(acc?' on':'')+'" data-ytd="1" '+tip('Jan 1 → today (last update)')+'>Accumulated</button></div><div class="bsr">'+inp('a',fD(1,a),'Start date')+inp('b',fD(MD[b],b),'End date')+'</div><div class="bsl" data-bsl><div class="bst"></div><div class="bsf" style="left:'+P(a)+';width:calc('+P(b)+' - '+P(a)+')"></div><i data-h="a" style="left:'+P(a)+'" '+tip(fD(1,a))+'></i><i data-h="b" style="left:'+P(b)+'" '+tip(fD(MD[b],b))+'></i></div></div>'}
+function commitDate(el){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(el.value.trim());let [a,b]=range();
+ const bad=()=>{el.classList.add('err');el.title='Use dd/mm/2026 between 01/01/2026 and 23/11/2026'};
+ if(!m)return bad();const d=+m[1],mo=+m[2]-1,y=+m[3];if(y!==2026||mo<0||mo>LAST||d<1||d>MD[mo])return bad();
+ if(el.dataset.di==='a'){a=mo;if(b<a)b=a}else{b=mo;if(a>b)a=b}S.f.period=a+'-'+b;S.cell=null;render()}
+document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('[data-di]')){if(e.key==='Enter'){e.preventDefault();commitDate(e.target)}else if(e.key==='Escape'){render()}}});
+document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('[data-di]')){const el=e.target;setTimeout(()=>{if(document.body.contains(el))commitDate(el)},0)}});
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('[data-di]')){const el=e.target;el.classList.remove('err');let v=el.value.replace(/[^0-9]/g,'').slice(0,8);el.value=v.length>4?v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4):v.length>2?v.slice(0,2)+'/'+v.slice(2):v}});
 function dd(key,label,w,style){const v=String(S.f[key]);const o=S.open===key;return '<div class="dd'+(o?' on':'')+(label?'':' nl')+'" style="'+(w?'width:'+w+'px;':'')+(style||'')+'">'+(label?'<label>'+label+'</label>':'')+'<button class="box" data-dd="'+key+'" aria-expanded="'+o+'"><span>'+esc(lab(key,v))+'</span><i class="chev"></i></button>'+(o&&key==='period'?perList(v):o?'<div class="list" role="listbox">'+opts(key).map(x=>'<button class="'+(String(x)===v?'sel':'')+'" data-opt="'+key+'" data-v="'+esc(x)+'">'+esc(lab(key,String(x)))+'</button>').join('')+'</div>':'')+'</div>'}
 const MORE={overview:[['scope','Operational scope'],['agg','Time aggregation'],['dim','Quality dimension']],matrix:[['dim','Quality dimension'],['rule','Quality rule']],rules:[['param','Critical parameter'],['scope','Operational scope'],['dim','Quality dimension']],records:[['param','Critical parameter'],['scope','Operational scope'],['status','Issue status']]};
 function fbar(keys){const extra=MORE[S.page];const n=extra.filter(([k])=>String(S.f[k])!==String(DEF[k])).length;
@@ -314,7 +326,7 @@ function pOverview(){const [s,e]=range();const ps=sel();const rp=refPairs(ps,s);
 const niceStep=v=>{const raw=Math.max(v,1)/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return Math.max(1,(n<=1?1:n<=2?2:n<=5?5:10)*p)};
 function scopeCard(s,e,ps,KEY){const set=m=>new Set(ps.filter(p=>act(p,m)).map(KEY));const A=set(s),B=set(e);const a=A.size,add=[...B].filter(x=>!A.has(x)).length,rem=[...A].filter(x=>!B.has(x)).length,cur=B.size;
  const plc=PL[S.f.countBy];const Cap=plc[0].toUpperCase()+plc.slice(1);
- let g='<div class="vt">Monitoring scope evolution</div><div class="vs">Reference '+M[s]+' 2026 → current '+M[e]+' 2026</div><div class="abs" style="right:176px;top:19px;font-size:11px;color:#605E5C">Count by</div>'+dd('countBy','',150,'position:absolute;right:16px;top:10px')+'';
+ let g='<div class="vt">Monitoring scope evolution</div><div class="vs">Reference '+M[s]+' 2026 → current '+M[e]+' 2026</div>';const ctl=dd('countBy','Count by',150,'position:absolute;right:16px;top:2px;z-index:5');
  const x0=40,x1=452,top=64,base=118,mx=Math.max(a+add,cur,1),stp=niceStep(mx*1.15),ym=stp*Math.ceil(mx*1.15/stp),Y=v=>base-v/ym*(base-top),slot=(x1-x0)/4,bw=48,cx=i=>x0+slot*(i+.5);
  let sv='';for(const t of [0,ym/2,ym])sv+='<line x1="'+x0+'" x2="'+x1+'" y1="'+Y(t)+'" y2="'+Y(t)+'" stroke="'+(t?'#EDF1F6':'#C5D0DE')+'"/><text x="'+(x0-6)+'" y="'+(Y(t)+3.5)+'" font-size="9.5" fill="#9AA3AE" text-anchor="end">'+Math.round(t)+'</text>';
  const bars=[['Reference',0,a,'#16376C',String(a),M[s]],['Additions',a,a+add,'#13A39A','+'+add],['Removals',a+add-rem,a+add,'#D64554',rem?'−'+rem:'0'],['Current',0,cur,'#16376C',String(cur),M[e]]];
@@ -330,7 +342,7 @@ function scopeCard(s,e,ps,KEY){const set=m=>new Set(ps.filter(p=>act(p,m)).map(K
  sv+='<polyline fill="none" stroke="#13A39A" stroke-width="2" stroke-linejoin="round" points="'+vals.map((v,i)=>LX(i)+','+LY(v)).join(' ')+'"/>';
  const evm=EV.filter(v=>v.m>s&&v.m<=e).map(v=>v.m);
  vals.forEach((v,i)=>{sv+='<circle cx="'+LX(i)+'" cy="'+LY(v)+'" r="3.5" fill="#13A39A" stroke="#fff" '+tip('<div class="h">'+MY(months[i])+'</div><b>'+v+'</b> '+plc+' monitored'+(i?'<div class="m">'+sg(v-vals[i-1]).replace('.0','')+' vs '+M[months[i-1]]+'</div>':''))+'/><text x="'+LX(i)+'" y="'+(LY(v)-6)+'" font-size="9.5" font-weight="700" text-anchor="middle" fill="'+(i===vals.length-1?'#16376C':'#13A39A')+'">'+v+'</text><text x="'+LX(i)+'" y="'+(lb+13)+'" font-size="9.5" text-anchor="middle" fill="'+(evm.includes(months[i])?'#252423':'#9AA3AE')+'" font-weight="'+(evm.includes(months[i])?700:400)+'">'+ML(months[i])+'</text>'});
- g+='<svg class="abs" style="left:0;top:0" width="468" height="242">'+sv+'</svg><div class="abs" style="left:16px;top:152px;font-size:11px;font-weight:700;color:#16376C">'+Cap+' monitored over time</div>';
+ g+='<svg class="abs" style="left:0;top:0" width="468" height="242">'+sv+'</svg><div class="abs" style="left:16px;top:152px;font-size:11px;font-weight:700;color:#16376C">'+Cap+' monitored over time</div>'+ctl;
  return g}
 function histTable(s,e){const ev=evFor(s,e);if(!ev.length)return empty('No scope or version changes','Nothing changed in the selected period and scope.');
  return '<div class="tbl"><table><colgroup><col style="width:80px"><col style="width:150px"><col style="width:120px"><col style="width:100px"><col style="width:200px"><col style="width:65px"><col style="width:65px"><col style="width:100px"><col style="width:170px"><col></colgroup><tr><th>Effective date</th><th>Change type</th><th>Data domain</th><th>Data entity</th><th>Affected item</th><th>Previous version</th><th>New version</th><th>Affected scope</th><th>Change reason</th><th>Reference-scope impact</th></tr>'+
@@ -441,6 +453,8 @@ function histCard(x,m){const snaps=[];for(let i=x.first;i<=m;i++){let s='Persist
 
 /* ---------------- i18n (PT) ---------------- */
 const PTD=[
+['Accumulated','Acumulado'],['Jan 1 → today (last update)','1º de jan → hoje (última atualização)'],['Use dd/mm/2026 between 01/01/2026 and 23/11/2026','Use dd/mm/2026 entre 01/01/2026 e 23/11/2026'],
+['Data domains monitored over time','Domínios de dados monitorados ao longo do tempo'],['Data entities monitored over time','Entidades de dados monitoradas ao longo do tempo'],['Critical parameters monitored over time','Parâmetros críticos monitorados ao longo do tempo'],['Quality rules monitored over time','Regras de qualidade monitoradas ao longo do tempo'],['Quality dimensions monitored over time','Dimensões de qualidade monitoradas ao longo do tempo'],
 ['Purchasing','Compras'],['Agricultural','Agrícola'],['Supply Chain','Supply Chain'],['Material','Material'],['Purchase contract','Contrato de compra'],['Cooperative member','Cooperado'],['Plot','Talhão'],['Cost center','Centro de custo'],['Profit center','Centro de lucro'],['Organizational structure','Estrutura organizacional'],['Plant','Planta'],['Transport route','Rota de transporte'],
 ['Consistency','Consistência'],['Accuracy','Exatidão'],['Romania','Romênia'],['Czech Republic','República Tcheca'],
 ['Address','Endereço'],['Contact data','Dados de contato'],['Logistics data','Dados logísticos'],['Supplier key','Chave do fornecedor'],['Account code','Código da conta'],['Job data','Dados do cargo'],['Reporting line','Linha de reporte'],['Material group','Grupo de material'],['Material key','Chave do material'],['Valuation','Valoração'],['Validity period','Período de vigência'],['Commercial terms','Condições comerciais'],['Supplier link','Vínculo com fornecedor'],['Member key','Chave do cooperado'],['Share capital','Capital social'],['Plot area','Área do talhão'],['Geolocation','Geolocalização'],['Member link','Vínculo com cooperado'],['Responsible','Responsável'],['Hierarchy','Hierarquia'],['Segment','Segmento'],['Org unit','Unidade organizacional'],['Factory calendar','Calendário de fábrica'],['Distance','Distância'],['Carrier','Transportadora'],
@@ -529,7 +543,7 @@ document.addEventListener('pointerdown',ev=>{const sl=ev.target.closest('[data-b
  let w=ev.target.dataset.h;if(!w){const i=idx(ev.clientX);w=Math.abs(i-a)<=Math.abs(i-b)&&!(i>b)?'a':'b'}
  const H={a:sl.querySelector('[data-h="a"]'),b:sl.querySelector('[data-h="b"]')},F=sl.querySelector('.bsf');H[w].classList.add('drag');
  const P=i=>(i/LAST*100).toFixed(2)+'%';
- const upd=()=>{H.a.style.left=P(a);H.b.style.left=P(b);F.style.left=P(a);F.style.width='calc('+P(b)+' - '+P(a)+')';const z=sl.parentNode;z.querySelector('[data-bs="a"]').textContent=fD(1,a);z.querySelector('[data-bs="b"]').textContent=fD(MD[b],b)};
+ const upd=()=>{H.a.style.left=P(a);H.b.style.left=P(b);F.style.left=P(a);F.style.width='calc('+P(b)+' - '+P(a)+')';const z=sl.parentNode;z.querySelector('[data-di="a"]').value=fD(1,a);z.querySelector('[data-di="b"]').value=fD(MD[b],b)};
  const mv=e=>{const i=idx(e.clientX);if(w==='a')a=Math.min(i,b);else b=Math.max(i,a);upd()};mv(ev);
  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);S.f.period=a+'-'+b;S.open=null;S.cell=null;S._skipClick=1;setTimeout(()=>S._skipClick=0,0);render()};
  addEventListener('pointermove',mv);addEventListener('pointerup',up)});
